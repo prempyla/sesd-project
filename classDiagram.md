@@ -1,4 +1,4 @@
-# 🏗️ Class Diagram — SIEMS
+#  Class Diagram — SIEMS
 
 ## Overview
 
