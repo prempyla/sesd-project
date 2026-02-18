@@ -1,8 +1,8 @@
-# 📋 Use Case Diagram — SIEMS
+#  Use Case Diagram — SETS
 
 ## Overview
 
-This use case diagram illustrates the interactions between the three primary actors (**Admin**, **Manager**, **Engineer**) and the system's core functionalities. It follows a structured approach to incident management, ensuring role-based access and automated escalation logic.
+This use case diagram illustrates the interactions between **Admin**, **Support Agent**, and **User** within the Smart Escalation Ticket System. It highlights role-based access control and the automated system-driven escalation flow.
 
 ---
 
@@ -11,112 +11,84 @@ This use case diagram illustrates the interactions between the three primary act
 ```mermaid
 flowchart LR
 
-subgraph "Smart Incident & Escalation Management System (SIEMS)"
+subgraph "Smart Escalation Ticket System (SETS)"
     direction TB
 
     %% Use Cases
-    UC1(🔐 Login / Authenticate)
-    UC2(📝 Create Incident)
-    UC3(👁️ View Incidents)
-    UC4(📌 Assign Incident)
-    UC5(🔄 Update Incident Status)
-    UC6(✅ Resolve Incident)
-    UC7(⚙️ Configure Escalation Rules)
-    UC8(⏰ Auto-Escalate Incident)
-    UC9(📊 View Analytics / Reports)
-    UC10(👥 Manage Users)
-    UC11(📜 View Audit Logs)
-    UC12(🔔 Receive Notification)
+    UC1( Authenticate / JWT)
+    UC2(Create Ticket)
+    UC3( View Own Tickets)
+    UC4( View All Tickets)
+    UC5( Assign Ticket)
+    UC6( Manage SLA Rules)
+    UC7(Update Status/Close)
+    UC8( Auto-Escalate)
+    UC9(View Metrics)
+    UC10( Receive Notifications)
 
     %% Relationships
-    UC5 -.->|"<<include>>"| UC11
-    UC4 -.->|"<<include>>"| UC11
-    UC8 -.->|"<<include>>"| UC11
-    UC6 -.->|"<<extend>>"| UC5
-    UC8 -.->|"<<include>>"| UC12
+    UC2 -.->|"<<include>>"| UC1
+    UC8 -.->|"<<include>>"| UC10
+    UC7 -.->|"<<include>>"| UC10
 end
 
 %% Actors
-Admin((🛡️ Admin))
-Manager((📋 Manager))
-Engineer((🔧 Engineer))
-System((⏱️ System Scheduler))
+UserActor(( User))
+SupportActor(( Support Agent))
+AdminActor(( Admin))
+SystemActor(( Scheduler))
+
+%% User Connections
+UserActor --> UC1
+UserActor --> UC2
+UserActor --> UC3
+
+%% Support Agent Connections
+SupportActor --> UC1
+SupportActor --> UC4
+SupportActor --> UC7
+SupportActor --> UC10
 
 %% Admin Connections
-Admin --> UC1
-Admin --> UC10
-Admin --> UC7
-Admin --> UC9
-Admin --> UC11
-Admin --> UC3
-
-%% Manager Connections
-Manager --> UC1
-Manager --> UC3
-Manager --> UC4
-Manager --> UC9
-Manager --> UC11
-
-%% Engineer Connections
-Engineer --> UC1
-Engineer --> UC2
-Engineer --> UC3
-Engineer --> UC5
+AdminActor --> UC1
+AdminActor --> UC4
+AdminActor --> UC5
+AdminActor --> UC6
+AdminActor --> UC9
 
 %% System Connections
-System --> UC8
-UC12 --> Manager
+SystemActor --> UC8
+UC8 --> SupportActor
 
 %% Styling
-style Admin fill:#4A90D9,stroke:#2C5F8A,color:#fff
-style Manager fill:#4A90D9,stroke:#2C5F8A,color:#fff
-style Engineer fill:#4A90D9,stroke:#2C5F8A,color:#fff
-style System fill:#FF6B6B,stroke:#C0392B,color:#fff
+style UserActor fill:#4A90D9,stroke:#2C5F8A,color:#fff
+style SupportActor fill:#4A90D9,stroke:#2C5F8A,color:#fff
+style AdminActor fill:#4A90D9,stroke:#2C5F8A,color:#fff
+style SystemActor fill:#FF6B6B,stroke:#C0392B,color:#fff
 ```
 
 ### Flow Summary
 
 | Phase | Description | Key Relationships |
 | :--- | :--- | :--- |
-| **1. Role-Based Access** | Distinguishes `Admin` (System/Rules), `Manager` (Teams), and `Engineer` (Tasks). | **Actor Specialization**, **RBAC** |
-| **2. Auth First** | All actors must `Authenticate` via JWT before accessing system features. | **Precondition**, **Security Barrier** |
-| **3. Process Inclusion** | All status-changing actions (`Assign`, `Update`, `Escalate`) mandate `Audit Logging`. | **<<include>>** (Mandatory) |
-| **4. Lifecycle Extension** | `Resolve Incident` serves as a specialized completion of the `Update Status` flow. | **<<extend>>** (Terminal State) |
-| **5. Autonomous Flow** | `System Scheduler` independently triggers `Auto-Escalate` based on time thresholds. | **Background Process** |
+| **1. Role-Based Access** | Segregates `User` (Submits), `Support` (Resolves), and `Admin` (Manages). | **RBAC**, **Actor Logic** |
+| **2. Auth Barrier** | Mandatory `JWT Authentication` before any session-based activity. | **Precondition**, **JWT** |
+| **3. Notification Trigger** | Status changes or breaches `<<include>>` notification events. | **Observer-like Flow** |
+| **4. Autonomous Scaling** | `System Scheduler` monitors SLAs and triggers `Auto-Escalate` independently. | **Background Engine** |
 
 ---
 
 ## Use Case Descriptions
 
-| # | Use Case                     | Actor(s)              | Description                                                                 |
-|---|------------------------------|-----------------------|-----------------------------------------------------------------------------|
-| 1 | Login / Authenticate         | All Roles             | Authenticate via credentials; receive JWT token with role-based claims     |
-| 2 | Create Incident              | Engineer              | Report a new incident with title, description, and severity                 |
-| 3 | View Incidents               | All Roles             | View incident list filtered by role permissions                            |
-| 4 | Assign Incident              | Manager               | Assign an OPEN incident to a specific Engineer                              |
-| 5 | Update Incident Status       | Engineer              | Transition incident state (e.g., ASSIGNED → IN_PROGRESS)                    |
-| 6 | Resolve Incident             | Engineer              | Finalize incident resolution and mark as RESOLVED                           |
-| 7 | Configure Escalation Rules   | Admin                 | Define severity-based timeout thresholds and escalation targets             |
-| 8 | Auto-Escalate Incident       | System Scheduler      | Background job checks for timed-out incidents and triggers escalation       |
-| 9 | View Analytics / Reports     | Admin, Manager        | View dashboards for resolution time, escalation rates, and team metrics     |
-| 10| Manage Users                 | Admin                 | CRUD operations on users and role management                                |
-| 11| View Audit Logs              | Admin, Manager        | Review immutable log of all lifecycle events                                |
-| 12| Receive Notification         | Manager               | Get notified on critical escalations via system events                      |
-
----
-
-## Actor Permissions Matrix
-
-| Use Case                   | Admin | Manager | Engineer | System |
-|----------------------------|:-----:|:-------:|:--------:|:------:|
-| Login / Authenticate       | ✅    | ✅      | ✅       | ❌     |
-| Create Incident            | ❌    | ❌      | ✅       | ❌     |
-| View Incidents             | ✅    | ✅      | ✅       | ❌     |
-| Assign Incident            | ❌    | ✅      | ❌       | ❌     |
-| Update Incident Status     | ❌    | ❌      | ✅       | ❌     |
-| Resolve Incident           | ❌    | ❌      | ✅       | ❌     |
-| Configure Escalation Rules | ✅    | ❌      | ❌       | ❌     |
-| Auto-Escalate Incident     | ❌    | ❌      | ❌       | ✅     |
-| View Analytics / Reports   | ✅    | ✅      | ❌       | ❌     |
-| Manage Users               | ✅    | ❌      | ❌       | ❌     |
-| View Audit Logs            | ✅    | ✅      | ❌       | ❌     |
+| # | Use Case | Actor(s) | Description |
+| :--- | :--- | :--- | :--- |
+| 1 | Authenticate / JWT | All Roles | Secure login providing role-specific access tokens. |
+| 2 | Create Ticket | User | Submit a request with category, description, and impact level. |
+| 3 | View Own Tickets | User | Track progress and history of personal submissions. |
+| 4 | View All Tickets | Admin, Support | Overview of all active and historical tickets in the system. |
+| 5 | Assign Ticket | Admin | Match tickets to specific Support Agents manually. |
+| 6 | Manage SLA Rules | Admin | Configure time-to-resolve targets for P1-P4 priorities. |
+| 7 | Update Status/Close | Support Agent | Transition tickets through lifecycle (In Progress → Resolved). |
+| 8 | Auto-Escalate | System Scheduler | Automatically bump ticket level if SLA is breached. |
+| 9 | View Metrics | Admin | Dashboards for resolution speed, breach rates, and team workload. |
+| 10 | Receive Notifications | Support, User | Real-time alerts on assignment, escalation, or status changes. |
