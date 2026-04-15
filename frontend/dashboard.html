@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — SETS</title>
+  <meta name="description" content="SETS Dashboard — view ticket metrics, recent activity, and system health." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="sidebar-brand-mark">SETS</span>
+        <span class="sidebar-brand-name">Escalation Desk</span>
+      </div>
+
+      <div class="sidebar-label">Navigation</div>
+      <button class="nav-item active" onclick="navigate('dashboard.html')">
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item" onclick="navigate('tickets.html')">
+        <span>All Tickets</span>
+      </button>
+      <button class="nav-item" id="nav-create-ticket" onclick="openCreateTicketModal()">
+        <span>New Ticket</span><span class="kbd">N</span>
+      </button>
+
+      <div class="sidebar-label" id="admin-section" style="display:none;">Admin</div>
+      <button class="nav-item" id="nav-admin-users" style="display:none;" onclick="navigate('admin.html')">
+        <span>User Management</span>
+      </button>
+
+      <div class="side-footer">
+        <div class="user-avatar" id="user-avatar-nav">?</div>
+        <div>
+          <div class="sidebar-brand-name" id="user-name-nav" style="line-height:1.2;">Loading…</div>
+          <div class="role-badge" id="role-badge-nav" style="background:none;padding:0;color:var(--ink-3);margin-top:2px;">—</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="topbar">
+        <div class="crumbs">Workspace / <strong>Dashboard</strong></div>
+        <div class="top-actions">
+          <div style="position:relative;">
+            <button class="btn-ghost btn" id="notif-btn" onclick="toggleNotifDropdown()" title="Notifications">
+              Notifications
+              <span class="kbd" id="notif-count" style="display:none;background:var(--danger);color:var(--surface);border:none;">0</span>
+            </button>
+            <div class="notif-dropdown" id="notif-dropdown">
+              <div class="notif-header">
+                Notifications
+                <button onclick="markAllNotifRead()" style="background:none;border:none;color:var(--ink-2);font-size:11px;font-family:var(--font-mono);cursor:pointer;text-transform:uppercase;letter-spacing:0.5px;">Mark all read</button>
+              </div>
+              <div id="notif-list"><div class="notif-empty">Loading…</div></div>
+            </div>
+          </div>
+          <button class="btn-ghost btn" onclick="logout()">Sign out</button>
+          <button class="btn btn-primary" onclick="openCreateTicketModal()" id="new-ticket-btn">
+            New ticket <span class="kbd" style="border-color:rgba(255,255,255,0.3);color:rgba(255,255,255,0.7)">N</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="content">
+        <header class="page-h">
+          <div class="eyebrow" id="dashboard-subtitle">Welcome back</div>
+          <h1>Overview</h1>
+        </header>
+
+        <!-- Metrics -->
+        <section class="metrics-grid" id="metrics-grid">
+          <!-- Populated by JS -->
+          <div class="metric-card"><div class="spinner"></div></div>
+        </section>
+
+        <!-- Recent Tickets -->
+        <section class="section">
+          <div class="section-header">
+            <h2 class="section-title">Recent tickets</h2>
+            <a href="tickets.html" class="section-more">View all →</a>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 70px;">ID</th>
+                  <th>Title</th>
+                  <th style="width: 70px;">Prio</th>
+                  <th style="width: 140px;">Status</th>
+                  <th style="width: 160px;">SLA Deadline</th>
+                  <th style="width: 100px;">Escal.</th>
+                </tr>
+              </thead>
+              <tbody id="recent-tickets-body">
+                <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--ink-3);">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Create Ticket Modal -->
+  <div class="modal-overlay" id="create-ticket-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Create New Ticket</h2>
+        <button class="modal-close" onclick="closeCreateTicketModal()">✕</button>
+      </div>
+      <form id="create-ticket-form">
+        <div class="form-group">
+          <label class="form-label" for="ticket-title">Title *</label>
+          <input type="text" id="ticket-title" class="form-input" placeholder="Brief description of the issue" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="ticket-desc">Description *</label>
+          <textarea id="ticket-desc" class="form-textarea" placeholder="Detailed description of what happened…" required></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label class="form-label" for="ticket-category">Category *</label>
+            <select id="ticket-category" class="form-select" required>
+              <option value="">Select category</option>
+              <option value="Payment">Payment</option>
+              <option value="Technical">Technical</option>
+              <option value="Account">Account</option>
+              <option value="General">General</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="ticket-impact">Impact *</label>
+            <select id="ticket-impact" class="form-select" required>
+              <option value="">Select impact</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+            </select>
+          </div>
+        </div>
+        <div id="auto-priority-preview" style="display:none;background:var(--line-2);border:1px solid var(--line);border-radius:3px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--ink-2);font-family:var(--font-mono)">
+          Auto-priority: <strong id="preview-priority" style="color:var(--ink)">—</strong> | SLA: <strong id="preview-sla" style="color:var(--ink)">—</strong>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:24px;">
+          <button type="button" class="btn btn-ghost" onclick="closeCreateTicketModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="submit-ticket-btn">Submit Ticket</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/notifications.js"></script>
+  <script>
+    if (!requireAuth()) { /* already redirected */ }
+
+    const user = Auth.getUser();
+    const SLA_HOURS = { P1: 2, P2: 6, P3: 24, P4: 72 };
+    const PRIORITY_MATRIX = {
+      Payment:   { HIGH: 'P1', MEDIUM: 'P1', LOW: 'P2' },
+      Technical: { HIGH: 'P1', MEDIUM: 'P2', LOW: 'P3' },
+      Account:   { HIGH: 'P2', MEDIUM: 'P3', LOW: 'P4' },
+      General:   { HIGH: 'P3', MEDIUM: 'P4', LOW: 'P4' },
+    };
+
+    // Init user UI
+    if (user) {
+      document.getElementById('user-name-nav').textContent = user.name;
+      document.getElementById('user-avatar-nav').textContent = user.name[0].toUpperCase();
+      const rb = document.getElementById('role-badge-nav');
+      rb.textContent = user.role;
+
+      if (user.role === 'ADMIN') {
+        document.getElementById('admin-section').style.display = '';
+        document.getElementById('nav-admin-users').style.display = '';
+      }
+    }
+
+    function navigate(path) { window.location.href = path; }
+
+    function logout() {
+      Auth.clear();
+      window.location.href = '/index.html';
+    }
+
+    // ── Load Metrics ──────────────────────────────────────────
+    async function loadDashboard() {
+      try {
+        const ticketsRes = await get('/tickets');
+        const tickets = ticketsRes.data;
+
+        const grid = document.getElementById('metrics-grid');
+
+        if (user.role === 'ADMIN') {
+          const metricsRes = await get('/tickets/admin/metrics');
+          const m = metricsRes.data;
+
+          const statusMap = {};
+          m.byStatus.forEach(r => statusMap[r.status] = parseInt(r.count));
+
+          grid.innerHTML = `
+            <div class="metric-card">
+              <div class="metric-value">${m.total}</div>
+              <div class="metric-label">Total</div>
+              <div class="metric-subtitle">Overall volume</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-value">${statusMap.OPEN || 0}</div>
+              <div class="metric-label">Open</div>
+              <div class="metric-subtitle">Unassigned</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-value">${(statusMap.IN_PROGRESS || 0) + (statusMap.ASSIGNED || 0)}</div>
+              <div class="metric-label">In Progress</div>
+              <div class="metric-subtitle">Actively handled</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-value">${statusMap.RESOLVED || 0}</div>
+              <div class="metric-label">Resolved</div>
+              <div class="metric-subtitle">Completed</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-value alert">${m.breached}</div>
+              <div class="metric-label">SLA Breached</div>
+              <div class="metric-subtitle">Requires attention</div>
+            </div>
+          `;
+        } else {
+          const open = tickets.filter(t => t.status === 'OPEN').length;
+          const inProg = tickets.filter(t => t.status === 'IN_PROGRESS' || t.status === 'ASSIGNED').length;
+          const resolved = tickets.filter(t => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
+
+          grid.innerHTML = `
+            <div class="metric-card">
+              <div class="metric-value">${tickets.length}</div>
+              <div class="metric-label">${user.role === 'SUPPORT' ? 'Assigned' : 'My Tickets'}</div>
+              <div class="metric-subtitle">Total</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-value">${open}</div>
+              <div class="metric-label">Open</div>
+              <div class="metric-subtitle">Awaiting action</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-value">${inProg}</div>
+              <div class="metric-label">In Progress</div>
+              <div class="metric-subtitle">Currently active</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-value">${resolved}</div>
+              <div class="metric-label">Resolved</div>
+              <div class="metric-subtitle">Finished</div>
+            </div>
+          `;
+        }
+
+        // Recent tickets table
+        const tbody = document.getElementById('recent-tickets-body');
+        const recent = tickets.slice(0, 8);
+        if (recent.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">🎉</div><p>No tickets yet. Create your first one!</p></div></td></tr>';
+          return;
+        }
+        tbody.innerHTML = recent.map(t => `
+          <tr onclick="window.location='tickets.html?id=${t.id}'">
+            <td class="id">#${t.id}</td>
+            <td>
+              <div class="title">${escHtml(t.title)}</div>
+              <div class="sub">${t.category}</div>
+            </td>
+            <td><span class="badge badge-${t.priority}">${t.priority}</span></td>
+            <td><span class="badge badge-${t.status}">${t.status.replace('_',' ')}</span></td>
+            <td class="mono ${isSlaBreached(t.slaDeadline) ? 'breach' : ''}">
+              ${formatDate(t.slaDeadline)}
+            </td>
+            <td>
+              ${t.escalationLevel > 0
+                ? `<span class="esc">L${t.escalationLevel}</span>`
+                : '<span class="mono muted">—</span>'
+              }
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function escHtml(str) {
+      return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    // ── Create Ticket Modal ───────────────────────────────────
+    function openCreateTicketModal() {
+      document.getElementById('create-ticket-modal').classList.add('open');
+    }
+    function closeCreateTicketModal() {
+      document.getElementById('create-ticket-modal').classList.remove('open');
+      document.getElementById('create-ticket-form').reset();
+      document.getElementById('auto-priority-preview').style.display = 'none';
+    }
+
+    // Auto-priority preview
+    function updatePriorityPreview() {
+      const cat = document.getElementById('ticket-category').value;
+      const imp = document.getElementById('ticket-impact').value;
+      if (!cat || !imp) {
+        document.getElementById('auto-priority-preview').style.display = 'none';
+        return;
+      }
+      const p = (PRIORITY_MATRIX[cat] || {})[imp] || 'P3';
+      document.getElementById('preview-priority').textContent = p;
+      document.getElementById('preview-sla').textContent = `${SLA_HOURS[p]} hour(s)`;
+      document.getElementById('auto-priority-preview').style.display = 'block';
+    }
+
+    document.getElementById('ticket-category').addEventListener('change', updatePriorityPreview);
+    document.getElementById('ticket-impact').addEventListener('change', updatePriorityPreview);
+
+    document.getElementById('create-ticket-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submit-ticket-btn');
+      btn.innerHTML = '<span class="spinner"></span> Submitting…';
+      btn.disabled = true;
+
+      try {
+        await post('/tickets', {
+          title: document.getElementById('ticket-title').value,
+          description: document.getElementById('ticket-desc').value,
+          category: document.getElementById('ticket-category').value,
+          impact: document.getElementById('ticket-impact').value,
+        });
+        showToast('Ticket created successfully', 'success');
+        closeCreateTicketModal();
+        loadDashboard();
+        loadNotifications();
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.innerHTML = 'Submit Ticket';
+        btn.disabled = false;
+      }
+    });
+
+    // Boot
+    loadDashboard();
+    initNotifications();
+  </script>
+</body>
+</html>
