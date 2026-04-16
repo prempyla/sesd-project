@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — SETS</title>
+  <meta name="description" content="SETS Admin Panel — user management, agent oversight, and system metrics." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="sidebar-brand-mark">SETS</span>
+        <span class="sidebar-brand-name">Escalation Desk</span>
+      </div>
+
+      <div class="sidebar-label">Navigation</div>
+      <button class="nav-item" onclick="window.location.href='dashboard.html'">
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item" onclick="window.location.href='tickets.html'">
+        <span>All Tickets</span>
+      </button>
+
+      <div class="sidebar-label">Admin</div>
+      <button class="nav-item active">
+        <span>User Management</span>
+      </button>
+
+      <div class="side-footer">
+        <div class="user-avatar" id="user-avatar-nav">A</div>
+        <div>
+          <div class="sidebar-brand-name" id="user-name-nav" style="line-height:1.2;">Admin</div>
+          <div class="role-badge admin" style="background:none;padding:0;margin-top:2px;">ADMIN</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main-content">
+      <!-- Topbar -->
+      <div class="topbar">
+        <div class="crumbs">Workspace / <strong>Admin Panel</strong></div>
+        <div class="top-actions">
+          <div style="position:relative;">
+            <button class="btn-ghost btn" id="notif-btn" onclick="toggleNotifDropdown()" title="Notifications">
+              Notifications
+              <span class="kbd" id="notif-count" style="display:none;background:var(--danger);color:var(--surface);border:none;">0</span>
+            </button>
+            <div class="notif-dropdown" id="notif-dropdown">
+              <div class="notif-header">
+                Notifications
+                <button onclick="markAllNotifRead()" style="background:none;border:none;color:var(--ink-2);font-size:11px;font-family:var(--font-mono);cursor:pointer;text-transform:uppercase;letter-spacing:0.5px;">Mark all read</button>
+              </div>
+              <div id="notif-list"><div class="notif-empty">Loading…</div></div>
+            </div>
+          </div>
+          <button class="btn-ghost btn" onclick="Auth.clear();window.location.href='/index.html'">Sign out</button>
+        </div>
+      </div>
+
+      <div class="content">
+        <header class="page-h">
+          <div class="eyebrow">Admin</div>
+          <h1>System Overview</h1>
+        </header>
+
+        <!-- Summary Metrics -->
+        <section class="metrics-grid" id="admin-metrics">
+          <div class="metric-card"><div class="spinner"></div></div>
+        </section>
+
+        <div class="row2" style="margin-top: 36px;">
+          <!-- Left Col -->
+          <div style="display:flex; flex-direction:column; gap:24px;">
+            <!-- Metrics Charts -->
+            <section class="panel">
+              <div class="head">Ticket Metrics</div>
+              <div class="body" style="padding:18px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;">
+                  <div>
+                    <h3 class="card-title" style="margin-bottom:16px;">By Status</h3>
+                    <div id="status-bars"></div>
+                  </div>
+                  <div>
+                    <h3 class="card-title" style="margin-bottom:16px;">By Priority</h3>
+                    <div id="priority-bars"></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- SLA Rules Reference -->
+            <section class="panel">
+              <div class="head">SLA Configuration</div>
+              <div class="body">
+                <div class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr><th>Prio</th><th>Label</th><th>Window</th><th>Auto-assigned for</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><span class="badge badge-P1">P1</span></td>
+                        <td>Critical</td>
+                        <td class="mono" style="color:var(--p1)">2 hours</td>
+                        <td class="sub">Payment (High/Med), Tech (High)</td>
+                      </tr>
+                      <tr>
+                        <td><span class="badge badge-P2">P2</span></td>
+                        <td>High</td>
+                        <td class="mono" style="color:var(--p2)">6 hours</td>
+                        <td class="sub">Payment (Low), Tech (Med), Acct (High)</td>
+                      </tr>
+                      <tr>
+                        <td><span class="badge badge-P3">P3</span></td>
+                        <td>Medium</td>
+                        <td class="mono" style="color:var(--p3)">24 hours</td>
+                        <td class="sub">Tech (Low), Acct (Med), Gen (High)</td>
+                      </tr>
+                      <tr>
+                        <td><span class="badge badge-P4">P4</span></td>
+                        <td>Low</td>
+                        <td class="mono" style="color:var(--p4)">72 hours</td>
+                        <td class="sub">Acct (Low), Gen (Med/Low)</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Right Col -->
+          <div>
+            <!-- Users Table -->
+            <section class="panel">
+              <div class="head" style="display:flex; justify-content:space-between; align-items:baseline;">
+                <span>Registered Users</span>
+                <span id="user-count" class="mono muted" style="font-size:11px;"></span>
+              </div>
+              <div class="body">
+                <div class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Role</th>
+                        <th>Joined</th>
+                      </tr>
+                    </thead>
+                    <tbody id="users-body">
+                      <tr><td colspan="4" style="text-align:center;padding:32px;color:var(--ink-3);"><div class="spinner" style="margin:auto;"></div></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/notifications.js"></script>
+  <script>
+    if (!requireAuth()) {}
+    if (!requireRole('ADMIN')) { window.location.href = '/dashboard.html'; }
+
+    const user = Auth.getUser();
+    if (user) {
+      document.getElementById('user-name-nav').textContent = user.name;
+      document.getElementById('user-avatar-nav').textContent = user.name[0];
+    }
+
+    function esc(s) { return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    function renderBar(label, value, max, color) {
+      const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+      return `
+        <div class="bar-row" style="margin-bottom:12px">
+          <span class="label">${label}</span>
+          <span class="track"><span class="fill" style="width:${pct}%; background:${color};"></span></span>
+          <span class="val">${value}</span>
+        </div>
+      `;
+    }
+
+    async function loadAdminData() {
+      try {
+        const [usersRes, metricsRes] = await Promise.all([
+          get('/admin/users'),
+          get('/tickets/admin/metrics'),
+        ]);
+
+        const users = usersRes.data;
+        const m = metricsRes.data;
+
+        // User count
+        document.getElementById('user-count').textContent = `${users.length} users`;
+
+        // Metrics cards
+        const statusMap = {};
+        m.byStatus.forEach(r => statusMap[r.status] = parseInt(r.count));
+        const priorityMap = {};
+        m.byPriority.forEach(r => priorityMap[r.priority] = parseInt(r.count));
+
+        document.getElementById('admin-metrics').innerHTML = `
+          <div class="metric-card">
+            <div class="metric-value">${m.total}</div>
+            <div class="metric-label">Total Tickets</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">${users.length}</div>
+            <div class="metric-label">Registered Users</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value alert">${m.breached}</div>
+            <div class="metric-label">SLA Breached</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">${statusMap.RESOLVED || 0}</div>
+            <div class="metric-label">Resolved</div>
+          </div>
+        `;
+
+        // Users table
+        const tbody = document.getElementById('users-body');
+        tbody.innerHTML = users.map(u => `
+          <tr>
+            <td class="id">#${u.id}</td>
+            <td>
+              <div class="title">${esc(u.name)}</div>
+              <div class="sub">${esc(u.email)}</div>
+            </td>
+            <td><span class="role-badge ${u.role.toLowerCase()}">${u.role}</span></td>
+            <td class="mono muted">${formatDate(u.created_at)}</td>
+          </tr>
+        `).join('');
+
+        // Status bars
+        const statuses = ['OPEN','ASSIGNED','IN_PROGRESS','RESOLVED','CLOSED'];
+        const statusColors = { OPEN:'var(--input)', ASSIGNED:'var(--p2)', IN_PROGRESS:'var(--accent)', RESOLVED:'var(--p4)', CLOSED:'var(--line)' };
+        const maxStatus = Math.max(...statuses.map(s => statusMap[s] || 0), 1);
+        document.getElementById('status-bars').innerHTML = statuses.map(s =>
+          renderBar(s.replace('_',' '), statusMap[s] || 0, maxStatus, statusColors[s] || 'var(--ink)')
+        ).join('');
+
+        // Priority bars
+        const priorities = ['P1','P2','P3','P4'];
+        const prioColors = { P1:'var(--p1)', P2:'var(--p2)', P3:'var(--p3)', P4:'var(--p4)' };
+        const maxPrio = Math.max(...priorities.map(p => priorityMap[p] || 0), 1);
+        document.getElementById('priority-bars').innerHTML = priorities.map(p =>
+          renderBar(p, priorityMap[p] || 0, maxPrio, prioColors[p])
+        ).join('');
+
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    loadAdminData();
+    initNotifications();
+  </script>
+</body>
+</html>
