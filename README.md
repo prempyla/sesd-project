@@ -1,149 +1,80 @@
-# 🎯 SETS — Smart Escalation Ticket System
+# SETS - Smart Escalation Ticket System
 
-A production-grade, full-stack ticketing system with automated SLA enforcement and multi-level smart escalation.
+A production-grade, full-stack ticketing system designed to streamline customer support workflows through automated Service Level Agreement (SLA) enforcement and multi-level smart escalation.
 
----
+## Key Features
+- **Role-Based Access Control (RBAC):** Distinct dashboards and permissions for Admins, Support Agents, and End Users.
+- **Automated Routing & SLA:** Tickets are automatically triaged with dynamic deadlines based on calculated priority.
+- **Background Escalation Engine:** Unresolved tickets breach their SLA are systematically escalated up the management chain via scheduled background jobs.
+- **Real-Time Notification System:** Users are kept strictly up to date on ticket assignments, resolutions, and escalations.
 
-## 🏗 Architecture
+## Tech Stack
+- **Backend Environment:** Node.js, Express.js
+- **Database Architecture:** PostgreSQL (Production) / SQLite (Local) via Sequelize ORM
+- **Authentication:** Stateless JWT (JSON Web Tokens) with Bcrypt hashing
+- **Frontend Client:** Vanilla HTML5, CSS3, ES6 JavaScript (No-build SPA architecture)
 
-```
-SETS follows a Layered Architecture (75% backend / 25% frontend):
-  Controller → Service → Repository → Database
-```
+## Architecture
 
-**Design Patterns Used:**
-- **Repository Pattern** — `UserRepository`, `TicketRepository` abstract all DB queries
-- **Service Layer** — `TicketService`, `EscalationEngine` for pure business logic
-- **Strategy Pattern** — `SlaProvider` for priority-to-deadline calculation
-- **Observer Pattern** — `NotificationService` triggered by state changes
-- **Factory Pattern** — `TicketService.createTicket()` auto-assigns priority and SLA
-- **State Machine** — Valid status transition enforcement in `TicketService.updateStatus()`
+SETS adheres to a Layered Architecture (Backend API / Frontend SPA):
+`Controller -> Service -> Repository -> Database`
 
----
+**Design Patterns Implemented:**
+- **Repository Pattern:** Abstracts all database queries.
+- **Service Layer:** Isolates pure business logic.
+- **Strategy Pattern:** Enables flexible priority-to-deadline calculations.
+- **Observer Pattern:** Triggers internal notifications on state changes.
+- **State Machine:** Enforces valid status transitions during ticket lifecycles.
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
-- Node.js ≥ 18
+- Node.js (v18 or higher)
 
-### Setup
+### Setup Instructions
 
 ```bash
 # Install backend dependencies
 cd backend
 npm install
 
-# Seed the database (creates SQLite DB + demo data)
+# Seed the database with demo data
 npm run seed
 
-# Start the server
+# Start the application
 npm start
 ```
 
-**Open:** http://localhost:5001
+Access the application at: `http://localhost:5001`
 
----
+## Authentication Roles
 
-## 🔐 Demo Credentials
+The system is seeded with the following logical roles for testing purposes:
 
-| Role | Email | Password |
-|------|-------|----------|
-| 🔴 Admin | admin@sets.local | admin123 |
-| 🟡 Support Agent | agent@sets.local | agent123 |
-| 🔵 User | user@sets.local | user123 |
+- **Admin Account**: `admin@sets.local` / `admin123`
+- **Support Agent**: `agent@sets.local` / `agent123`
+- **Standard User**: `user@sets.local` / `user123`
 
----
+## Core Mechanics
 
-## 📡 API Endpoints
+### SLA Integration
+Service Level Agreement deadlines are automatically calculated upon ticket creation based on category impact mappings:
+- **P1 Priority:** 2 hours
+- **P2 Priority:** 6 hours
+- **P3 Priority:** 24 hours
+- **P4 Priority:** 72 hours
 
-### Auth
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register a new user |
-| POST | `/api/auth/login` | Login (returns JWT) |
-| GET | `/api/auth/me` | Get current user |
+### Escalation Engine
+A background cron process runs continuously handling stale tickets. The engine automatically escalates a ticket's internal level if:
+1. The assigned SLA deadline has elapsed.
+2. The ticket state is open or in progress.
+3. The ticket has not yet reached the maximum escalation threshold.
 
-### Tickets
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/api/tickets` | Any | Create ticket (auto-priority) |
-| GET | `/api/tickets` | Any | Get tickets (role-filtered) |
-| GET | `/api/tickets/:id` | Any | Get ticket details |
-| PUT | `/api/tickets/:id/status` | Support, Admin | Update ticket status |
-| PUT | `/api/tickets/:id/assign` | Admin | Assign ticket to agent |
-| GET | `/api/tickets/admin/metrics` | Admin | Dashboard metrics |
+## Technical Documentation
 
-### Notifications
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/api/notifications` | Any | Get my notifications |
-| PUT | `/api/notifications/:id/read` | Any | Mark as read |
-| PUT | `/api/notifications/mark-all-read` | Any | Mark all as read |
-
-### Admin
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/api/admin/users` | Admin | List all users |
-| GET | `/api/admin/agents` | Admin | List support agents |
-
----
-
-## ⏱ SLA Windows
-
-| Priority | Window | Auto-assigned For |
-|----------|--------|-------------------|
-| P1 | 2 hours | Payment (High/Medium), Technical (High) |
-| P2 | 6 hours | Payment (Low), Technical (Medium), Account (High) |
-| P3 | 24 hours | Technical (Low), Account (Medium), General (High) |
-| P4 | 72 hours | Account (Low), General (Medium/Low) |
-
----
-
-## 🔄 Escalation Engine
-
-A background cron job runs **every 5 minutes**. It queries all tickets where:
-- `sla_deadline < NOW()`
-- `status NOT IN (RESOLVED, CLOSED)`
-- `escalation_level < 3`
-
-And escalates them to the next level (max Level 3 → Admin).
-
----
-
-## 📁 Project Structure
-
-```
-sesd-project/
-├── backend/
-│   └── src/
-│       ├── config/          # DB + Seed
-│       ├── models/          # Sequelize ORM models
-│       ├── repositories/    # Data access layer
-│       ├── services/        # Business logic
-│       ├── controllers/     # API route handlers
-│       ├── middlewares/     # JWT + RBAC
-│       ├── routes/          # Express routers
-│       └── jobs/            # Cron + Escalation Engine
-├── frontend/
-│   ├── index.html           # Login
-│   ├── dashboard.html       # Role-adaptive dashboard
-│   ├── tickets.html         # Ticket management
-│   ├── admin.html           # Admin panel
-│   ├── css/style.css        # Design system
-│   └── js/                  # API client + modules
-├── idea.md
-├── useCaseDiagram.md
-├── sequenceDiagram.md
-├── classDiagram.md
-└── ErDiagram.md
-```
-
----
-
-## 📋 Documentation
-
-- [idea.md](./idea.md) — Project scope and key features
-- [useCaseDiagram.md](./useCaseDiagram.md) — Use Case Diagram (Mermaid)
-- [sequenceDiagram.md](./sequenceDiagram.md) — Ticket lifecycle sequence
-- [classDiagram.md](./classDiagram.md) — Class structure and relationships
-- [ErDiagram.md](./ErDiagram.md) — Database schema and relationships
+Project diagrams and technical planning documents are available in the root directory:
+- `idea.md` - Project scope, features, and core requirements
+- `useCaseDiagram.md` - System interaction boundaries and actor mappings
+- `sequenceDiagram.md` - Technical lifecycle of ticket state mutations
+- `classDiagram.md` - Application class structures
+- `ErDiagram.md` - Relational database schema
